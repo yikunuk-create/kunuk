@@ -1,6 +1,14 @@
 {
   "works": [
     {
+      "year": "2026",
+      "status": "Released",
+      "featured": true,
+      "code": "NUK-001",
+      "title": "wrapflex",
+      "image": "/images/uploads/chatgpt-image-2026년-7월-5일-오후-06_32_19.png"
+    },
+    {
       "code": "NUK—001",
       "title": "Korean Liminal Space",
       "year": "2026",
@@ -8,59 +16,6 @@
       "featured": true,
       "image": "",
       "video": ""
-    },
-    {
-      "code": "NUK—002",
-      "title": "Raf Simons Archive Film Study",
-      "year": "2026",
-      "status": "Coming soon",
-      "featured": true,
-      "image": "",
-      "video": ""
-    },
-    {
-      "code": "NUK—003",
-      "title": "Wrapflex Brand Identity",
-      "year": "2026",
-      "status": "Coming soon",
-      "featured": true,
-      "image": "",
-      "video": ""
-    },
-    {
-      "code": "NUK—004",
-      "title": "AI Grailed App Concept",
-      "year": "2026",
-      "status": "Coming soon",
-      "featured": true,
-      "image": "",
-      "video": ""
-    },
-    {
-      "code": "NUK—005",
-      "title": "Untitled",
-      "year": "2026",
-      "status": "Coming soon",
-      "featured": false,
-      "image": "",
-      "video": ""
-    },
-    {
-      "code": "NUK—006",
-      "title": "Untitled",
-      "year": "2026",
-      "status": "Reserved",
-      "featured": false,
-      "image": "",
-      "video": ""
-    },
-    {
-      "year": "2026",
-      "status": "Released",
-      "featured": true,
-      "code": "NUK-001",
-      "title": "wrapflex",
-      "image": "/images/uploads/chatgpt-image-2026년-7월-5일-오후-06_32_19.png"
     }
   ]
 }
