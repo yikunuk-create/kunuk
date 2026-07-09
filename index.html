@@ -206,6 +206,20 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--ikb);outline-offset
   50%{transform:translateY(7px);opacity:1}
 }
 
+/* hero pager: fine ruler ticks + rolling catalog-code counter */
+.hero-pager{
+  position:absolute;right:20px;bottom:110px;z-index:5;
+  display:flex;flex-direction:column;align-items:flex-end;gap:12px;
+  font-family:'IBM Plex Mono',monospace;color:#F2F2F0;
+  pointer-events:none;
+}
+.hero-pager .ruler{position:relative;width:16px;height:96px}
+.hero-pager .ruler i{position:absolute;right:0;height:1px;width:6px;background:rgba(242,242,240,.3)}
+.hero-pager .ruler i.on{width:16px;background:#F2F2F0;transition:top .5s cubic-bezier(.2,.6,.2,1)}
+.hero-pager .code{height:14px;overflow:hidden;font-size:10px;letter-spacing:.14em}
+.hero-pager .code .col{display:flex;flex-direction:column;transition:transform .5s cubic-bezier(.2,.6,.2,1)}
+.hero-pager .code .col span{height:14px;line-height:14px;display:block;text-align:right}
+
 /* ================= below the fold: normal scroll ================= */
 .sec{padding:90px 24px 110px}
 .sec > h2{
@@ -507,7 +521,9 @@ footer{
   function setWork(i){
     layers.forEach(function(l){ l.classList.toggle('show', l.getAttribute('data-work') == i); });
     works.forEach(function(w){ w.classList.toggle('on', w.getAttribute('data-work') == i); });
+    document.dispatchEvent(new CustomEvent('workchange', {detail:{index: parseInt(i,10)}}));
   }
+  window.__setWork = setWork;
   works.forEach(function(w){
     var i = w.getAttribute('data-work');
     w.addEventListener('mouseenter', function(){ setWork(i); });
@@ -639,6 +655,7 @@ footer{
           var sup = btn.querySelector('sup');
           btn.firstChild.textContent = w.title;
           if(sup && w.year) sup.textContent = w.year;
+          if(w.code) btn.dataset.code = w.code;
         }
         if(w.image || w.video){
           var layer = document.querySelector('.layer[data-work="'+i+'"]');
@@ -667,8 +684,105 @@ footer{
           if(ph) ph.innerHTML = '<img src="'+w.image+'" alt="'+(w.title||'')+'">';
         }
       });
+
+      document.dispatchEvent(new CustomEvent('worksloaded'));
     })
     .catch(function(){ /* no data file yet (e.g. local file:// preview) — keep placeholders */ });
+})();
+</script>
+
+<script>
+(function(){
+  /* ---------- hero pager: ruler ticks + rolling catalog-code counter ----------
+     Replaces the A24-style "1/6" with the archive's own language: the current
+     work's catalog code (NUK—001) rolls like an odometer, and a fine ruler on
+     the edge marks the position. Swiping the hero switches works on touch. */
+  var hero = document.querySelector('.hero');
+  var btns = document.querySelectorAll('#works .work');
+  var N = btns.length;
+  if(!hero || N < 2) return;
+
+  var pager = document.createElement('div');
+  pager.className = 'hero-pager';
+  var ruler = document.createElement('div'); ruler.className = 'ruler';
+  var H = 96, STEP = 6;
+  for(var y = 0; y <= H; y += STEP){
+    var t = document.createElement('i'); t.style.top = y+'px'; ruler.appendChild(t);
+  }
+  var activeTick = document.createElement('i');
+  activeTick.className = 'on'; activeTick.style.top = '0px';
+  ruler.appendChild(activeTick);
+  var code = document.createElement('div'); code.className = 'code';
+  var col = document.createElement('div'); col.className = 'col';
+  code.appendChild(col);
+  pager.appendChild(ruler); pager.appendChild(code);
+  hero.appendChild(pager);
+
+  var cur = 0, rolling = false;
+  function pad3(n){ return ('00'+n).slice(-3); }
+  function codeFor(i){
+    var b = btns[i];
+    return (b && b.dataset.code) || 'NUK—'+pad3(i+1);
+  }
+  function label(i){ return codeFor(i)+' / '+pad3(N); }
+
+  function snapTick(){
+    /* active tick lands exactly on a ruler tick */
+    var y = Math.round((H * cur / (N-1)) / STEP) * STEP;
+    activeTick.style.top = y+'px';
+  }
+  function render(instant){
+    snapTick();
+    if(instant || rolling){
+      col.style.transition = 'none';
+      col.innerHTML = '<span>'+label(cur)+'</span>';
+      col.style.transform = 'translateY(0)';
+      void col.offsetHeight;
+      col.style.transition = '';
+      rolling = false;
+      return;
+    }
+    rolling = true;
+    var span = document.createElement('span');
+    span.textContent = label(cur);
+    col.appendChild(span);
+    requestAnimationFrame(function(){
+      col.style.transform = 'translateY(-14px)';
+      setTimeout(function(){
+        col.style.transition = 'none';
+        if(col.children.length > 1) col.removeChild(col.firstChild);
+        col.style.transform = 'translateY(0)';
+        void col.offsetHeight;
+        col.style.transition = '';
+        rolling = false;
+      }, 520);
+    });
+  }
+  render(true);
+
+  document.addEventListener('workchange', function(e){
+    var i = e.detail.index;
+    if(isNaN(i) || i === cur) return;
+    cur = i;
+    render();
+  });
+  /* refresh label once real catalog codes arrive from the CMS */
+  document.addEventListener('worksloaded', function(){ render(true); });
+
+  /* touch swipe on the hero */
+  var x0 = null, y0 = null;
+  hero.addEventListener('touchstart', function(e){
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, {passive:true});
+  hero.addEventListener('touchend', function(e){
+    if(x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0;
+    var dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if(Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+    var next = (cur + (dx < 0 ? 1 : -1) + N) % N;
+    if(window.__setWork) window.__setWork(next);
+  }, {passive:true});
 })();
 </script>
 
