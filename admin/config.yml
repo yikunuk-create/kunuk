@@ -1,6 +1,9 @@
 backend:
-  name: git-gateway
+  name: github
+  repo: yikunuk-create/kunuk
   branch: main
+  base_url: https://kunuk.netlify.app
+  auth_endpoint: /.netlify/functions/auth
 
 media_folder: "images/uploads"
 public_folder: "/images/uploads"
