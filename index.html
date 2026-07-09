@@ -907,18 +907,30 @@ footer{
         var featuredIdx = [];
         data.works.forEach(function(w, ix){ if(w && w.featured) featuredIdx.push(ix); });
         document.querySelectorAll('#works .work').forEach(function(btn, i){
-          if(i >= featuredIdx.length) return;
-          var wIdx = featuredIdx[i];
           var sup = btn.querySelector('sup');
-          if(on){
+          if(!on){
+            unbindEdit(btn);
+            if(sup) unbindEdit(sup);
+            return;
+          }
+          if(i < featuredIdx.length){
+            /* slot backed by a CMS work → edit it */
+            var wIdx = featuredIdx[i];
             bindEdit(btn, function(){ editTitle(wIdx, {get textContent(){ return btn.firstChild.textContent; }, set textContent(v){ btn.firstChild.textContent = v; }}); });
             if(sup){
               sup.style.pointerEvents = 'auto';
               bindEdit(sup, function(){ editYear(wIdx, sup); }, 'pointer');
             }
           } else {
-            unbindEdit(btn);
-            if(sup) unbindEdit(sup);
+            /* placeholder slot → clicking creates a new featured work */
+            bindEdit(btn, function(){
+              var title = prompt('이 자리는 아직 비어 있습니다. 새 작품 제목 (히어로에 노출됩니다):');
+              if(!title) return;
+              updateWorks(function(data){
+                data.works.push({code:'NUK—00'+(data.works.length+1), title:title, year:String(new Date().getFullYear()), status:'In production', featured:true, image:'', video:''});
+                return 'Add featured work '+title;
+              }, function(){ btn.firstChild.textContent = title; });
+            }, 'pointer');
           }
         });
       });
