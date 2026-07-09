@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KUNUK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0B;
+  --ink:#F2F2F0;
+  --grey:#8A8A8C;
+  --grey-dim:#48484A;
+  --line:#1A1A1C;
+  --media:#111113;
+  --media-tint:rgba(255,255,255,.03);
+  --ikb:#1F49FF;
+}
+[data-theme="light"]{
+  --bg:#FFFFFF;
+  --ink:#0A0A0B;
+  --grey:#7A7A7C;
+  --grey-dim:#B8B8BA;
+  --line:#EBEBED;
+  --media:#F4F4F5;
+  --media-tint:rgba(0,0,0,.03);
+  --ikb:#002FA7;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Archivo',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+  transition:background .35s,color .35s;
+}
+a{color:inherit;text-decoration:none}
+a:focus-visible,button:focus-visible{outline:2px solid var(--ikb);outline-offset:3px}
+.eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--grey);
+}
+
+/* ================= fixed chrome (difference blend works on any bg) ================= */
+.bar{
+  position:fixed;top:0;left:0;right:0;z-index:30;
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  padding:18px 24px;
+  mix-blend-mode:difference;
+  color:#F2F2F0;
+}
+.bar .brand{
+  grid-column:2;
+  font-weight:900;
+  font-variation-settings:'wdth' 125;
+  font-size:16px;letter-spacing:.03em;
+  text-align:center;
+}
+.bar .left{grid-column:1;display:flex;gap:4px}
+.bar .right{grid-column:3;display:flex;justify-content:flex-end;gap:4px}
+.chip{
+  background:none;border:none;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:.1em;
+  color:rgba(242,242,240,.45);
+  padding:6px 6px;text-transform:uppercase;
+  transition:color .2s;
+}
+.chip:hover{color:#F2F2F0}
+
+/* ---- language index: plain horizontal text list, never a box ---- */
+.lang-list{display:flex;align-items:baseline;gap:18px}
+.lang{
+  background:none;border:none;cursor:pointer;padding:0;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;
+  color:rgba(242,242,240,.35);
+  position:relative;
+  transition:color .2s;
+}
+.lang:hover{color:rgba(242,242,240,.8)}
+.lang.on{color:#F2F2F0}
+.lang.on::after{
+  content:"";
+  position:absolute;left:0;right:0;bottom:-5px;
+  height:1px;background:#F2F2F0;
+}
+
+/* ---- mobile: minimal "KO ▾" that opens the native picker ---- */
+.lang-drop{display:none;position:relative}
+.lang-drop .cur{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;
+  color:#F2F2F0;
+}
+.lang-drop select{
+  position:absolute;inset:-8px;
+  width:calc(100% + 16px);height:calc(100% + 16px);
+  opacity:0;cursor:pointer;
+  -webkit-appearance:none;appearance:none;
+}
+
+/* ================= HERO: fullscreen visual + title list (shown once) ================= */
+.hero{
+  height:100svh;
+  position:relative;
+  overflow:hidden;
+}
+.stage{position:absolute;inset:0}
+/* One layer per project. JS crossfades.
+   TO USE REAL MEDIA LATER, inside a .layer put:
+   <img src="your-image.jpg" alt="">  or
+   <video src="your-video.mp4" autoplay muted loop playsinline></video> */
+.layer{
+  position:absolute;inset:0;
+  opacity:0;transform:scale(1.03);
+  transition:opacity .8s ease;
+}
+.layer.show{opacity:1}
+.layer img,.layer video{width:100%;height:100%;object-fit:cover;display:block}
+
+.l-liminal{
+  background:
+    radial-gradient(90% 70% at 50% 0%, rgba(216,224,176,.34), transparent 60%),
+    radial-gradient(130% 90% at 50% 115%, rgba(16,18,14,.95), transparent 70%),
+    linear-gradient(180deg,#1B1D14 0%,#0B0C09 100%);
+}
+.l-liminal::after{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,transparent 0 140px,rgba(255,255,255,.03) 140px 141px)}
+.l-raf{
+  background:
+    radial-gradient(110% 85% at 22% 30%, rgba(150,10,22,.5), transparent 62%),
+    linear-gradient(180deg,#140407 0%,#070203 100%);
+}
+.l-wrapflex{
+  background:linear-gradient(135deg,#191A1C 0%,#2E3034 45%,#0F1012 100%);
+}
+.l-wrapflex::after{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent 0 90px,rgba(255,255,255,.035) 90px 91px)}
+.l-grailed{
+  background:linear-gradient(180deg,#08080A 0%,#0E0E11 100%);
+}
+.l-grailed::after{content:"";position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 25%,rgba(255,255,255,.045) 25% calc(25% + 1px)),
+    repeating-linear-gradient(0deg,transparent 0 33.3%,rgba(255,255,255,.045) 33.3% calc(33.3% + 1px))}
+
+.hero-scrim{
+  position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(75deg, rgba(0,0,0,.55) 0%, transparent 55%);
+}
+.hero-content{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 24px 52px;
+}
+.hero-eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:.22em;
+  text-transform:uppercase;
+  color:rgba(242,242,240,.65);
+  margin-bottom:16px;
+}
+.works{display:flex;flex-direction:column;align-items:flex-start}
+.work{
+  background:none;border:none;cursor:pointer;
+  text-align:left;padding:0;
+  font-family:'Archivo',sans-serif;
+  font-weight:500;
+  font-variation-settings:'wdth' 100;
+  font-size:clamp(28px,5vw,62px);
+  letter-spacing:-.015em;
+  line-height:1.2;
+  color:rgba(242,242,240,.45);
+  transition:color .3s;
+  display:flex;align-items:flex-start;gap:10px;
+}
+.work:hover,.work.on{color:#F2F2F0}
+.work sup{
+  font-family:'IBM Plex Mono',monospace;
+  font-weight:400;
+  font-size:clamp(9px,1.1vw,12px);
+  letter-spacing:.08em;
+  color:rgba(242,242,240,.55);
+  margin-top:.85em;
+}
+.hero .down{
+  position:absolute;right:26px;bottom:44px;
+  background:none;border:none;cursor:pointer;
+  color:#F2F2F0;font-size:22px;line-height:1;
+  animation:down 2.6s ease-in-out infinite;
+}
+@keyframes down{
+  0%,100%{transform:translateY(0);opacity:.5}
+  50%{transform:translateY(7px);opacity:1}
+}
+
+/* ================= below the fold: normal scroll ================= */
+.sec{padding:90px 24px 110px}
+.sec > h2{
+  font-weight:600;
+  font-size:clamp(40px,7vw,86px);
+  letter-spacing:-.02em;line-height:1;
+  margin-bottom:14px;
+}
+.sec > .sub{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--grey);
+  margin-bottom:56px;
+}
+
+/* staggered card grid (the version you liked) */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  gap:56px 24px;
+  align-items:start;
+}
+.card{display:flex;flex-direction:column;gap:12px}
+.card .media{
+  background:var(--media);
+  border:1px solid var(--line);
+  position:relative;overflow:hidden;
+  transition:background .35s,border-color .25s;
+}
+.card:hover .media{border-color:var(--grey-dim)}
+.card .ph{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .7s cubic-bezier(.2,.6,.2,1);
+  background:
+    radial-gradient(120% 90% at 30% 20%, var(--media-tint), transparent 60%),
+    radial-gradient(100% 80% at 80% 90%, var(--media-tint), transparent 55%);
+}
+.card:hover .ph{transform:scale(1.045)}
+.card .ph .code{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;letter-spacing:.16em;
+  color:var(--grey-dim);transition:color .3s;
+}
+.card:hover .ph .code{color:var(--grey)}
+.card .cap{display:flex;flex-direction:column;gap:4px}
+.card .cap .t{
+  font-weight:600;font-size:19px;letter-spacing:-.01em;
+  transition:color .25s;
+}
+.card:hover .cap .t{color:var(--ikb)}
+
+.c1{grid-column:1 / span 5}
+.c1 .media{aspect-ratio:4/5}
+.c2{grid-column:6 / span 4;margin-top:90px}
+.c2 .media{aspect-ratio:16/10}
+.c3{grid-column:10 / span 3;margin-top:40px}
+.c3 .media{aspect-ratio:1/1}
+.c4{grid-column:2 / span 3;margin-top:-20px}
+.c4 .media{aspect-ratio:1/1}
+.c5{grid-column:6 / span 5;margin-top:60px}
+.c5 .media{aspect-ratio:16/9}
+.c6{grid-column:1 / span 4}
+.c6 .media{aspect-ratio:4/5}
+
+/* materials */
+.materials{border-top:1px solid var(--line)}
+.mat-list{max-width:860px}
+.mat-row{
+  display:grid;grid-template-columns:100px 150px 1fr;gap:24px;
+  padding:20px 0;border-bottom:1px solid var(--line);
+  align-items:baseline;
+}
+.mat-row:first-of-type{border-top:1px solid var(--line)}
+.mat-row .idx{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--grey-dim)}
+.mat-row .what{font-weight:600;font-size:15px;letter-spacing:-.01em}
+.mat-row .how{font-size:14px;color:var(--grey);line-height:1.65}
+
+/* want more */
+.more{
+  border-top:1px solid var(--line);
+  padding:130px 24px;text-align:center;
+}
+.more .contact-eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:.18em;
+  color:var(--grey-dim);text-transform:uppercase;
+  margin-bottom:20px;
+}
+.more h2{
+  font-weight:600;
+  font-size:clamp(32px,6vw,72px);
+  letter-spacing:-.02em;line-height:1.05;
+}
+.more p{
+  margin-top:16px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;letter-spacing:.12em;color:var(--grey);
+  text-transform:uppercase;
+}
+.more .links{
+  margin:44px auto 0;
+  width:min(520px, 100%);
+  display:flex;flex-direction:column;
+  border-top:1px solid var(--line);
+}
+.more .links a{
+  display:grid;
+  grid-template-columns:140px 1fr;
+  align-items:baseline;
+  gap:24px;
+  padding:16px 4px;
+  border-bottom:1px solid var(--line);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  transition:color .2s;
+}
+.more .links a .role{
+  font-size:9px;letter-spacing:.2em;
+  color:var(--grey-dim);
+  text-align:left;
+  transition:color .2s;
+}
+.more .links a .val{
+  text-align:left;
+  color:var(--ink);
+  word-break:break-all;
+  transition:color .2s;
+}
+.more .links a:hover .val,
+.more .links a:hover .role{color:var(--ikb)}
+
+footer{
+  padding:22px 24px;border-top:1px solid var(--line);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:9px;letter-spacing:.14em;
+  color:var(--grey-dim);text-transform:uppercase;
+}
+
+@media (max-width:860px){
+  .grid{grid-template-columns:1fr 1fr;gap:40px 16px}
+  .c1,.c2,.c3,.c4,.c5,.c6{grid-column:auto;margin-top:0}
+  .c2,.c4{margin-top:48px}
+}
+@media (max-width:560px){
+  .lang-list{display:none}
+  .lang-drop{display:block}
+  .more .links a{grid-template-columns:96px 1fr;gap:14px;padding:14px 2px}
+  .more .links a .val{letter-spacing:.06em}
+  .grid{grid-template-columns:1fr}
+  .c2,.c4{margin-top:0}
+  .mat-row{grid-template-columns:70px 1fr;grid-template-rows:auto auto}
+  .mat-row .how{grid-column:1 / -1}
+  .sec{padding:64px 18px 80px}
+  .hero-content{padding:0 18px 44px}
+  .work{line-height:1.32}
+  .bar{padding:14px 12px}
+  .bar nav{gap:12px}
+}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="left">
+    <nav class="lang-list" id="langBox" aria-label="Language">
+      <button class="lang on" data-lang="en">EN</button>
+      <button class="lang" data-lang="ko">KO</button>
+      <button class="lang" data-lang="ja">JA</button>
+      <button class="lang" data-lang="zh">ZH</button>
+      <button class="lang" data-lang="fr">FR</button>
+    </nav>
+    <div class="lang-drop">
+      <span class="cur" id="langCur">EN ▾</span>
+      <select id="langSel" aria-label="Language">
+        <option value="en">EN</option>
+        <option value="ko">KO</option>
+        <option value="ja">JA</option>
+        <option value="zh">ZH</option>
+        <option value="fr">FR</option>
+      </select>
+    </div>
+  </div>
+  <div class="brand">KUNUK</div>
+  <div class="right">
+    <button class="chip" id="themeBtn">Light</button>
+  </div>
+</div>
+
+<!-- ===== fullscreen intro hero: A24 pattern, shown once at the top ===== -->
+<header class="hero">
+  <div class="stage" id="stage">
+    <div class="layer l-liminal show" data-work="0"></div>
+    <div class="layer l-raf" data-work="1"></div>
+    <div class="layer l-wrapflex" data-work="2"></div>
+    <div class="layer l-grailed" data-work="3"></div>
+  </div>
+  <div class="hero-scrim"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Kunuk Archive — AI Film / Graphic / Visual Direction</div>
+    <div class="works" id="works">
+      <button class="work on" data-work="0">Korean Liminal Space<sup>2026</sup></button>
+      <button class="work" data-work="1">Raf Simons Archive Film Study<sup>2026</sup></button>
+      <button class="work" data-work="2">Wrapflex Brand Identity<sup>2026</sup></button>
+      <button class="work" data-work="3">AI Grailed App Concept<sup>2026</sup></button>
+    </div>
+  </div>
+  <button class="down" id="downBtn" aria-label="Scroll down">↓</button>
+</header>
+
+<!-- ===== normal scroll page below ===== -->
+<section id="upcoming" class="sec">
+  <h2 data-i18n="upH">Upcoming</h2>
+  <div class="sub" data-i18n="upSub">Nothing released yet — everything below is in production</div>
+  <div class="grid" id="grid">
+    <div class="card c1">
+      <div class="media"><div class="ph"><span class="code">NUK—001</span></div></div>
+      <div class="cap"><span class="eyebrow" data-i18n="prod">In production</span><span class="t">Korean Liminal Space</span></div>
+    </div>
+    <div class="card c2">
+      <div class="media"><div class="ph"><span class="code">NUK—002</span></div></div>
+      <div class="cap"><span class="eyebrow" data-i18n="soon1">Coming soon</span><span class="t">Raf Simons Archive Film Study</span></div>
+    </div>
+    <div class="card c3">
+      <div class="media"><div class="ph"><span class="code">NUK—003</span></div></div>
+      <div class="cap"><span class="eyebrow" data-i18n="soon2">Coming soon</span><span class="t">Wrapflex Brand Identity</span></div>
+    </div>
+    <div class="card c4">
+      <div class="media"><div class="ph"><span class="code">NUK—004</span></div></div>
+      <div class="cap"><span class="eyebrow" data-i18n="soon3">Coming soon</span><span class="t">AI Grailed App Concept</span></div>
+    </div>
+    <div class="card c5">
+      <div class="media"><div class="ph"><span class="code">NUK—005</span></div></div>
+      <div class="cap"><span class="eyebrow" data-i18n="soon4">Coming soon</span><span class="t">Untitled</span></div>
+    </div>
+    <div class="card c6">
+      <div class="media"><div class="ph"><span class="code">NUK—006</span></div></div>
+      <div class="cap"><span class="eyebrow" data-i18n="rsv">Reserved</span><span class="t">Untitled</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="materials" class="sec materials">
+  <h2>Materials</h2>
+  <div class="sub" data-i18n="matSub">Not a résumé</div>
+  <div class="mat-list">
+    <div class="mat-row">
+      <div class="idx">MAT—01</div>
+      <div class="what" data-i18n="m1w">Construction</div>
+      <div class="how" data-i18n="m1h">Taking garments apart and rebuilding them. Pattern, stitch, the memory of structure.</div>
+    </div>
+    <div class="mat-row">
+      <div class="idx">MAT—02</div>
+      <div class="what" data-i18n="m2w">Precision</div>
+      <div class="how" data-i18n="m2h">Classification, records, and the habit of reading fine print — learned in patent &amp; trademark practice.</div>
+    </div>
+    <div class="mat-row">
+      <div class="idx">MAT—03</div>
+      <div class="what" data-i18n="m3w">Direction</div>
+      <div class="how" data-i18n="m3h">A cold, industrial graphic language — closer to the archive than the feed.</div>
+    </div>
+    <div class="mat-row">
+      <div class="idx">MAT—04</div>
+      <div class="what" data-i18n="m4w">Production</div>
+      <div class="how" data-i18n="m4h">A way of making that links research, image, layout, motion and copy through AI.</div>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="more">
+  <div class="contact-eyebrow">NUK—000 / CONTACT</div>
+  <h2>Contact</h2>
+  <div class="links">
+    <a href="mailto:kunukyi@naver.com"><span class="role">Inquiries</span><span class="val">kunukyi@naver.com</span></a>
+    <a href="mailto:yikunuk@gmail.com"><span class="role">Mail</span><span class="val">yikunuk@gmail.com</span></a>
+    <a href="https://instagram.com/kunuk.axis" target="_blank" rel="noopener"><span class="role">Design</span><span class="val">@kunuk.axis</span></a>
+    <a href="https://instagram.com/kunukarchive" target="_blank" rel="noopener"><span class="role">Archive</span><span class="val">@kunukarchive</span></a>
+  </div>
+</section>
+
+<footer>
+  <div>© 2026 KUNUK</div>
+  <div>NUK—000 / SEOUL–GYEONGGI</div>
+</footer>
+
+<script>
+(function(){
+  /* ---------- hero: hovering a title swaps the fullscreen visual ---------- */
+  var layers = document.querySelectorAll('.layer');
+  var works = document.querySelectorAll('.work');
+  function setWork(i){
+    layers.forEach(function(l){ l.classList.toggle('show', l.getAttribute('data-work') == i); });
+    works.forEach(function(w){ w.classList.toggle('on', w.getAttribute('data-work') == i); });
+  }
+  works.forEach(function(w){
+    var i = w.getAttribute('data-work');
+    w.addEventListener('mouseenter', function(){ setWork(i); });
+    w.addEventListener('focus', function(){ setWork(i); });
+    w.addEventListener('click', function(){ setWork(i); });
+  });
+
+  /* ---------- down arrow ---------- */
+  document.getElementById('downBtn').addEventListener('click', function(){
+    document.getElementById('upcoming').scrollIntoView({behavior:'smooth'});
+  });
+
+  /* ---------- i18n ---------- */
+  var dict = {
+    en:{upH:"Upcoming",upSub:"Nothing released yet — everything below is in production",
+        prod:"In production",soon1:"Coming soon",soon2:"Coming soon",soon3:"Coming soon",soon4:"Coming soon",rsv:"Reserved",
+        matSub:"Not a résumé",
+        m1w:"Construction",m1h:"Taking garments apart and rebuilding them. Pattern, stitch, the memory of structure.",
+        m2w:"Precision",m2h:"Classification, records, and the habit of reading fine print — learned in patent & trademark practice.",
+        m3w:"Direction",m3h:"A cold, industrial graphic language — closer to the archive than the feed.",
+        m4w:"Production",m4h:"A way of making that links research, image, layout, motion and copy through AI.",
+        
+        theme:{dark:"Light",light:"Dark"}},
+    ko:{upH:"Upcoming",upSub:"아직 공개된 작업이 없습니다 — 아래는 모두 제작 중",
+        prod:"제작 중",soon1:"공개 예정",soon2:"공개 예정",soon3:"공개 예정",soon4:"공개 예정",rsv:"예약됨",
+        matSub:"이력서가 아닙니다",
+        m1w:"구조",m1h:"옷을 해체하고 다시 조립하는 방식. 패턴, 봉제, 구조의 기억.",
+        m2w:"정밀",m2h:"특허·상표 실무에서 배운 분류, 기록, 작은 글씨를 읽는 습관.",
+        m3w:"방향",m3h:"피드보다 아카이브에 가까운 차가운 인더스트리얼 그래픽 언어.",
+        m4w:"프로덕션",m4h:"리서치, 이미지, 레이아웃, 모션, 카피를 AI 기반으로 연결하는 제작 방식.",
+        
+        theme:{dark:"Light",light:"Dark"}},
+    ja:{upH:"Upcoming",upSub:"まだ公開作品はありません — 以下すべて制作中",
+        prod:"制作中",soon1:"近日公開",soon2:"近日公開",soon3:"近日公開",soon4:"近日公開",rsv:"予約済み",
+        matSub:"履歴書ではありません",
+        m1w:"構造",m1h:"服を解体し、組み立て直す方法。パターン、縫製、構造の記憶。",
+        m2w:"精密",m2h:"特許・商標実務で身につけた分類、記録、細部を読む習慣。",
+        m3w:"方向",m3h:"フィードよりアーカイブに近い、冷たくインダストリアルなグラフィック言語。",
+        m4w:"制作",m4h:"リサーチ、画像、レイアウト、モーション、コピーをAIでつなぐ制作方法。",
+        
+        theme:{dark:"Light",light:"Dark"}},
+    zh:{upH:"Upcoming",upSub:"尚未发布任何作品 — 以下全部制作中",
+        prod:"制作中",soon1:"即将公开",soon2:"即将公开",soon3:"即将公开",soon4:"即将公开",rsv:"已预留",
+        matSub:"这不是简历",
+        m1w:"结构",m1h:"拆解服装并重新组装的方式。版型、缝制、结构的记忆。",
+        m2w:"精确",m2h:"在专利与商标实务中养成的分类、记录与阅读细则的习惯。",
+        m3w:"方向",m3h:"比起信息流更接近档案的、冷峻的工业化图形语言。",
+        m4w:"制作",m4h:"以AI串联调研、图像、排版、动态与文案的制作方式。",
+        
+        theme:{dark:"Light",light:"Dark"}},
+    fr:{upH:"Upcoming",upSub:"Rien n'est encore sorti — tout ce qui suit est en production",
+        prod:"En production",soon1:"À venir",soon2:"À venir",soon3:"À venir",soon4:"À venir",rsv:"Réservé",
+        matSub:"Ceci n'est pas un CV",
+        m1w:"Construction",m1h:"Défaire le vêtement et le remonter. Patron, couture, mémoire de la structure.",
+        m2w:"Précision",m2h:"Classer, consigner, lire les petites lignes — appris dans la pratique des brevets et marques.",
+        m3w:"Direction",m3h:"Un langage graphique froid et industriel — plus proche de l'archive que du flux.",
+        m4w:"Production",m4h:"Une façon de faire qui relie recherche, image, mise en page, motion et copie par l'IA.",
+        
+        theme:{dark:"Light",light:"Dark"}}
+  };
+  var lang = "en";
+  var theme = "dark";
+  var themeBtn = document.getElementById('themeBtn');
+  var root = document.documentElement;
+
+  function applyLang(l){
+    lang = l;
+    root.setAttribute('lang', l);
+    var d = dict[l];
+    document.querySelectorAll('[data-i18n]').forEach(function(el){
+      var k = el.getAttribute('data-i18n');
+      if(d[k]) el.textContent = d[k];
+    });
+    themeBtn.textContent = d.theme[theme];
+    document.querySelectorAll('#langBox .lang').forEach(function(b){
+      b.classList.toggle('on', b.getAttribute('data-lang') === l);
+    });
+    var sel = document.getElementById('langSel');
+    var cur = document.getElementById('langCur');
+    sel.value = l;
+    cur.textContent = l.toUpperCase() + ' ▾';
+  }
+  document.querySelectorAll('#langBox .lang').forEach(function(b){
+    b.addEventListener('click', function(){ applyLang(b.getAttribute('data-lang')); });
+  });
+  document.getElementById('langSel').addEventListener('change', function(){
+    applyLang(this.value);
+  });
+
+  /* ---------- theme ---------- */
+  var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  theme = prefersLight ? 'light' : 'dark';
+  function applyTheme(t){
+    theme = t;
+    root.setAttribute('data-theme', t);
+    themeBtn.textContent = dict[lang].theme[t];
+  }
+  themeBtn.addEventListener('click', function(){
+    applyTheme(theme === 'dark' ? 'light' : 'dark');
+  });
+
+  /* ---------- init ---------- */
+  var nav = (navigator.language || "en").slice(0,2);
+  if(dict[nav]) lang = nav;
+  applyTheme(theme);
+  applyLang(lang);
+})();
+</script>
+
+<script>
+(function(){
+  /* ---------- CMS content loader ----------
+     Reads data/works.json. For any work that has an image or video set
+     via the /admin editor, swap it into the matching hero layer and
+     grid card. Everything else (titles, layout, colors) stays as coded. */
+  fetch('data/works.json', {cache:'no-store'})
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if(!data || !Array.isArray(data.works)) return;
+      var featured = data.works.filter(function(w){ return w.featured; }).slice(0,4);
+
+      featured.forEach(function(w, i){
+        if(!w.image && !w.video) return;
+        var layer = document.querySelector('.layer[data-work="'+i+'"]');
+        if(!layer) return;
+        layer.innerHTML = w.video
+          ? '<video src="'+w.video+'" autoplay muted loop playsinline></video>'
+          : '<img src="'+w.image+'" alt="'+(w.title||'')+'">';
+      });
+
+      var cards = document.querySelectorAll('#grid .card');
+      data.works.forEach(function(w, i){
+        var card = cards[i];
+        if(!card || !w.image) return;
+        var ph = card.querySelector('.ph');
+        if(ph) ph.innerHTML = '<img src="'+w.image+'" alt="'+(w.title||'')+'" style="width:100%;height:100%;object-fit:cover">';
+      });
+    })
+    .catch(function(){ /* no data file yet (e.g. local file:// preview) — keep placeholders */ });
+})();
+</script>
+
+</body>
+</html>
