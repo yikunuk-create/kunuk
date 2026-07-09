@@ -614,54 +614,49 @@ footer{
 <script>
 (function(){
   /* ---------- CMS content loader ----------
-     Reads data/works.json. For any work that has an image or video set
-     via the /admin editor, swap it into the matching hero layer and
-     grid card. Everything else (titles, layout, colors) stays as coded. */
-  /* Matching is done by TITLE TEXT, not array position — the CMS list
-     order can change (new entries added anywhere) but the hero layers
-     and grid cards are fixed slots tied to specific titles. */
-  function norm(s){ return (s||'').trim().toLowerCase(); }
-
+     Reads data/works.json and drives the hero (first 4 featured works,
+     in the order they appear in the CMS list) and the grid (all works,
+     in CMS order) — titles, codes, status and images all come from the
+     JSON. Slots with no matching work keep their coded placeholder. */
   fetch('data/works.json', {cache:'no-store'})
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(data){
       if(!data || !Array.isArray(data.works)) return;
 
       var heroButtons = document.querySelectorAll('#works .work');
-      var heroTitleToIndex = {};
-      heroButtons.forEach(function(btn){
-        heroTitleToIndex[norm(btn.firstChild.textContent)] = btn.getAttribute('data-work');
+      var layers = document.querySelectorAll('.layer');
+      var featured = data.works.filter(function(w){ return w.featured; }).slice(0, heroButtons.length);
+
+      featured.forEach(function(w, i){
+        var btn = heroButtons[i];
+        if(btn && w.title){
+          var sup = btn.querySelector('sup');
+          btn.firstChild.textContent = w.title;
+          if(sup && w.year) sup.textContent = w.year;
+        }
+        if(w.image || w.video){
+          var layer = document.querySelector('.layer[data-work="'+i+'"]');
+          if(layer){
+            layer.innerHTML = w.video
+              ? '<video src="'+w.video+'" autoplay muted loop playsinline></video>'
+              : '<img src="'+w.image+'" alt="'+(w.title||'')+'">';
+          }
+        }
       });
 
       var cards = document.querySelectorAll('#grid .card');
-      var cardTitleToEl = {};
-      cards.forEach(function(card){
+      data.works.slice(0, cards.length).forEach(function(w, i){
+        var card = cards[i];
+        if(!card) return;
+        var code = card.querySelector('.code');
+        var eyebrow = card.querySelector('.eyebrow');
         var t = card.querySelector('.t');
-        if(t) cardTitleToEl[norm(t.textContent)] = card;
-      });
-
-      data.works.forEach(function(w){
-        var key = norm(w.title);
-        if(!key) return;
-
-        if(w.image || w.video){
-          var idx = heroTitleToIndex[key];
-          if(idx !== undefined){
-            var layer = document.querySelector('.layer[data-work="'+idx+'"]');
-            if(layer){
-              layer.innerHTML = w.video
-                ? '<video src="'+w.video+'" autoplay muted loop playsinline></video>'
-                : '<img src="'+w.image+'" alt="'+(w.title||'')+'">';
-            }
-          }
-        }
-
+        if(code && w.code) code.textContent = w.code;
+        if(eyebrow && w.status){ eyebrow.removeAttribute('data-i18n'); eyebrow.textContent = w.status; }
+        if(t && w.title) t.textContent = w.title;
         if(w.image){
-          var card = cardTitleToEl[key];
-          if(card){
-            var ph = card.querySelector('.ph');
-            if(ph) ph.innerHTML = '<img src="'+w.image+'" alt="'+(w.title||'')+'" style="width:100%;height:100%;object-fit:cover">';
-          }
+          var ph = card.querySelector('.ph');
+          if(ph) ph.innerHTML = '<img src="'+w.image+'" alt="'+(w.title||'')+'" style="width:100%;height:100%;object-fit:cover">';
         }
       });
     })
