@@ -794,23 +794,134 @@ footer{
     reader.readAsDataURL(file);
   }
 
+  /* Fetch works.json, apply a mutation, commit, then update the DOM. */
+  function updateWorks(mutator, optimistic){
+    ghGet('data/works.json')
+      .then(function(f){
+        var data = JSON.parse(b64DecodeUnicode(f.content));
+        if(!Array.isArray(data.works)) data.works = [];
+        var label = mutator(data);
+        if(label === false){ toast('취소됨'); return null; }
+        return ghPut('data/works.json', b64EncodeUnicode(JSON.stringify(data, null, 2)), f.sha, label + ' (inline edit)');
+      })
+      .then(function(res){
+        if(!res) return;
+        if(optimistic) optimistic();
+        toast('저장 완료 — 1분 내 사이트에 반영됩니다');
+      })
+      .catch(function(err){
+        if(/401|403/.test(String(err))){
+          toast('로그인이 만료되었습니다 — 관리자 페이지에서 다시 로그인해 주세요');
+          setTimeout(function(){ location.href='/admin/'; }, 1500);
+        } else {
+          toast('오류: ' + err.message);
+        }
+      });
+  }
+
+  /* Ensure a work exists at index idx, creating it (with a prompted title) if missing. */
+  function ensureWork(data, idx){
+    if(idx < data.works.length && data.works[idx]) return idx;
+    var title = prompt('이 자리는 아직 비어 있습니다. 새 작품 제목:');
+    if(!title) return -1;
+    data.works.push({code:'NUK—00'+(data.works.length+1), title:title, year:String(new Date().getFullYear()), status:'In production', featured:false, image:'', video:''});
+    return data.works.length - 1;
+  }
+
+  var STATUSES = ['Released','In production','Coming soon','Reserved'];
+
+  function editTitle(idx, el){
+    var cur = el.textContent;
+    var v = prompt('제목:', cur);
+    if(v === null || v === cur) return;
+    updateWorks(function(data){
+      var i = ensureWork(data, idx); if(i < 0) return false;
+      data.works[i].title = v;
+      return 'Rename work to '+v;
+    }, function(){ el.textContent = v; });
+  }
+
+  function editStatus(idx, el){
+    var v = prompt('상태 번호를 입력하세요:\n1 — Released (공개)\n2 — In production (제작 중)\n3 — Coming soon (공개 예정)\n4 — Reserved (예약)', '');
+    var s = STATUSES[parseInt(v,10)-1];
+    if(!s) return;
+    updateWorks(function(data){
+      var i = ensureWork(data, idx); if(i < 0) return false;
+      data.works[i].status = s;
+      return 'Set status '+s;
+    }, function(){ el.removeAttribute('data-i18n'); el.textContent = s; });
+  }
+
+  function editYear(idx, el){
+    var cur = el.textContent;
+    var v = prompt('연도 표시 (예: 2026 또는 2026.07):', cur);
+    if(v === null || v === cur) return;
+    updateWorks(function(data){
+      var i = ensureWork(data, idx); if(i < 0) return false;
+      data.works[i].year = v;
+      return 'Set year '+v;
+    }, function(){ el.textContent = v; });
+  }
+
+  function bindEdit(el, handler, cursor){
+    el.style.outline = '1px dashed #1a5cff';
+    el.style.cursor = cursor || 'text';
+    el._editHandler = function(e){ e.preventDefault(); e.stopPropagation(); handler(); };
+    el.addEventListener('click', el._editHandler);
+  }
+  function unbindEdit(el){
+    el.style.outline = ''; el.style.cursor = '';
+    if(el._editHandler) el.removeEventListener('click', el._editHandler);
+  }
+
   function markSlots(on){
     /* grid cards: index in DOM order == index in works.json (loader uses the same order) */
     document.querySelectorAll('#grid .card').forEach(function(card, i){
       var media = card.querySelector('.media');
-      if(!media) return;
-      media.style.outline = on ? '2px dashed #1a5cff' : '';
-      media.style.cursor = on ? 'copy' : '';
-      if(on){
-        media._editHandler = function(e){
-          e.preventDefault(); e.stopPropagation();
-          uploadFor({el: media, workIndex: i});
-        };
-        media.addEventListener('click', media._editHandler);
-      } else if(media._editHandler){
-        media.removeEventListener('click', media._editHandler);
+      var t = card.querySelector('.t');
+      var eyebrow = card.querySelector('.eyebrow');
+      if(media){
+        if(on){
+          media.style.outline = '2px dashed #1a5cff';
+          media.style.cursor = 'copy';
+          media._editHandler = function(e){
+            e.preventDefault(); e.stopPropagation();
+            uploadFor({el: media, workIndex: i});
+          };
+          media.addEventListener('click', media._editHandler);
+        } else {
+          media.style.outline = ''; media.style.cursor = '';
+          if(media._editHandler) media.removeEventListener('click', media._editHandler);
+        }
       }
+      if(t){ on ? bindEdit(t, function(){ editTitle(i, t); }) : unbindEdit(t); }
+      if(eyebrow){ on ? bindEdit(eyebrow, function(){ editStatus(i, eyebrow); }, 'pointer') : unbindEdit(eyebrow); }
     });
+
+    /* hero buttons: featured works, in CMS order — map back to works.json indices
+       via the same filter the loader uses */
+    fetch('data/works.json', {cache:'no-store'})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(data){
+        if(!data || !Array.isArray(data.works)) return;
+        var featuredIdx = [];
+        data.works.forEach(function(w, ix){ if(w && w.featured) featuredIdx.push(ix); });
+        document.querySelectorAll('#works .work').forEach(function(btn, i){
+          if(i >= featuredIdx.length) return;
+          var wIdx = featuredIdx[i];
+          var sup = btn.querySelector('sup');
+          if(on){
+            bindEdit(btn, function(){ editTitle(wIdx, {get textContent(){ return btn.firstChild.textContent; }, set textContent(v){ btn.firstChild.textContent = v; }}); });
+            if(sup){
+              sup.style.pointerEvents = 'auto';
+              bindEdit(sup, function(){ editYear(wIdx, sup); }, 'pointer');
+            }
+          } else {
+            unbindEdit(btn);
+            if(sup) unbindEdit(sup);
+          }
+        });
+      });
   }
 
   window.__kunukEdit = function(){
@@ -828,7 +939,7 @@ footer{
 
     bar = document.createElement('div');
     bar.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1a5cff;color:#fff;z-index:99998;display:flex;align-items:center;gap:16px;padding:10px 18px;font:12px/1 "IBM Plex Mono",monospace;letter-spacing:.1em';
-    bar.innerHTML = '<span>EDIT MODE — 파란 점선 틀을 클릭해 사진/영상 교체</span>'
+    bar.innerHTML = '<span>EDIT MODE — 사진 틀 클릭: 교체 · 제목/상태/연도 클릭: 수정</span>'
       + '<a href="/admin/" style="margin-left:auto;color:#fff">전체 관리자</a>'
       + '<button id="editExit" style="background:#fff;color:#1a5cff;border:0;padding:6px 12px;cursor:pointer;font:inherit">종료</button>';
     document.body.appendChild(bar);
