@@ -258,6 +258,12 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--ikb);outline-offset
 }
 .card:hover .cap .t{color:var(--ikb)}
 
+/* When a real image is loaded from the CMS, drop the placeholder's
+   designed aspect-ratio and let the photo keep its own proportions. */
+.card .media.natural{aspect-ratio:auto !important}
+.card .media.natural .ph{position:static;inset:auto}
+.card .media.natural .ph img{width:100%;height:auto;display:block}
+
 .c1{grid-column:1 / span 5}
 .c1 .media{aspect-ratio:4/5}
 .c2{grid-column:6 / span 4;margin-top:90px}
@@ -419,8 +425,8 @@ footer{
 
 <!-- ===== normal scroll page below ===== -->
 <section id="upcoming" class="sec">
-  <h2 data-i18n="upH">Upcoming</h2>
-  <div class="sub" data-i18n="upSub">Nothing released yet — everything below is in production</div>
+  <h2 data-i18n="upH">Index</h2>
+  <div class="sub" data-i18n="upSub">All works in one place — status shown on each item</div>
   <div class="grid" id="grid">
     <div class="card c1">
       <div class="media"><div class="ph"><span class="code">NUK—001</span></div></div>
@@ -490,7 +496,7 @@ footer{
 <footer>
   <div>© 2026 KUNUK</div>
   <div>NUK—000 / SEOUL–GYEONGGI</div>
-  <a href="/admin/" aria-label="Admin" style="opacity:.25; margin-left:auto; font-size:14px; text-decoration:none; color:inherit; transition:opacity .2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.25" onclick="if(prompt('Password:')!=='830221'){alert('Incorrect password');return false;}">&#9881;</a>
+  <a href="/admin/" aria-label="Admin" style="opacity:.25; margin-left:auto; font-size:14px; text-decoration:none; color:inherit; transition:opacity .2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.25" onclick="if(prompt('Password:')!=='830221'){alert('Incorrect password');return false;} if(window.__kunukEdit&&window.__kunukEdit()){return false;}">&#9881;</a>
 </footer>
 
 <script>
@@ -516,7 +522,7 @@ footer{
 
   /* ---------- i18n ---------- */
   var dict = {
-    en:{upH:"Upcoming",upSub:"Nothing released yet — everything below is in production",
+    en:{upH:"Index",upSub:"All works in one place — status shown on each item",
         prod:"In production",soon1:"Coming soon",soon2:"Coming soon",soon3:"Coming soon",soon4:"Coming soon",rsv:"Reserved",
         matSub:"Not a résumé",
         m1w:"Construction",m1h:"Taking garments apart and rebuilding them. Pattern, stitch, the memory of structure.",
@@ -525,7 +531,7 @@ footer{
         m4w:"Production",m4h:"A way of making that links research, image, layout, motion and copy through AI.",
         
         theme:{dark:"Light",light:"Dark"}},
-    ko:{upH:"Upcoming",upSub:"아직 공개된 작업이 없습니다 — 아래는 모두 제작 중",
+    ko:{upH:"Index",upSub:"모든 작업을 한곳에 — 상태는 각 항목에 표시됩니다",
         prod:"제작 중",soon1:"공개 예정",soon2:"공개 예정",soon3:"공개 예정",soon4:"공개 예정",rsv:"예약됨",
         matSub:"이력서가 아닙니다",
         m1w:"구조",m1h:"옷을 해체하고 다시 조립하는 방식. 패턴, 봉제, 구조의 기억.",
@@ -534,7 +540,7 @@ footer{
         m4w:"프로덕션",m4h:"리서치, 이미지, 레이아웃, 모션, 카피를 AI 기반으로 연결하는 제작 방식.",
         
         theme:{dark:"Light",light:"Dark"}},
-    ja:{upH:"Upcoming",upSub:"まだ公開作品はありません — 以下すべて制作中",
+    ja:{upH:"Index",upSub:"すべての作品を一覧で — 状態は各項目に表示",
         prod:"制作中",soon1:"近日公開",soon2:"近日公開",soon3:"近日公開",soon4:"近日公開",rsv:"予約済み",
         matSub:"履歴書ではありません",
         m1w:"構造",m1h:"服を解体し、組み立て直す方法。パターン、縫製、構造の記憶。",
@@ -543,7 +549,7 @@ footer{
         m4w:"制作",m4h:"リサーチ、画像、レイアウト、モーション、コピーをAIでつなぐ制作方法。",
         
         theme:{dark:"Light",light:"Dark"}},
-    zh:{upH:"Upcoming",upSub:"尚未发布任何作品 — 以下全部制作中",
+    zh:{upH:"Index",upSub:"所有作品一览 — 状态标注于每个条目",
         prod:"制作中",soon1:"即将公开",soon2:"即将公开",soon3:"即将公开",soon4:"即将公开",rsv:"已预留",
         matSub:"这不是简历",
         m1w:"结构",m1h:"拆解服装并重新组装的方式。版型、缝制、结构的记忆。",
@@ -552,7 +558,7 @@ footer{
         m4w:"制作",m4h:"以AI串联调研、图像、排版、动态与文案的制作方式。",
         
         theme:{dark:"Light",light:"Dark"}},
-    fr:{upH:"Upcoming",upSub:"Rien n'est encore sorti — tout ce qui suit est en production",
+    fr:{upH:"Index",upSub:"Tous les travaux au même endroit — le statut figure sur chaque élément",
         prod:"En production",soon1:"À venir",soon2:"À venir",soon3:"À venir",soon4:"À venir",rsv:"Réservé",
         matSub:"Ceci n'est pas un CV",
         m1w:"Construction",m1h:"Défaire le vêtement et le remonter. Patron, couture, mémoire de la structure.",
@@ -655,12 +661,183 @@ footer{
         if(eyebrow && w.status){ eyebrow.removeAttribute('data-i18n'); eyebrow.textContent = w.status; }
         if(t && w.title) t.textContent = w.title;
         if(w.image){
+          var media = card.querySelector('.media');
           var ph = card.querySelector('.ph');
-          if(ph) ph.innerHTML = '<img src="'+w.image+'" alt="'+(w.title||'')+'" style="width:100%;height:100%;object-fit:cover">';
+          if(media) media.classList.add('natural');
+          if(ph) ph.innerHTML = '<img src="'+w.image+'" alt="'+(w.title||'')+'">';
         }
       });
     })
     .catch(function(){ /* no data file yet (e.g. local file:// preview) — keep placeholders */ });
+})();
+</script>
+
+<script>
+(function(){
+  /* ---------- inline edit mode ----------
+     Activated from the footer gear (after the password) when a Decap CMS
+     login token is present in localStorage (set by logging in at /admin/,
+     same origin). Click any image slot on the page itself to upload a
+     replacement — the file is committed to GitHub and Netlify redeploys. */
+  var REPO = 'yikunuk-create/kunuk', BRANCH = 'main';
+  var editing = false, tok = null;
+
+  function getToken(){
+    var keys = ['decap-cms-user','netlify-cms-user'];
+    for(var i=0;i<keys.length;i++){
+      try{
+        var raw = localStorage.getItem(keys[i]);
+        if(!raw) continue;
+        var u = JSON.parse(raw);
+        var t = u && (u.token || (u.auth && u.auth.token) || (u.login && u.token));
+        if(t) return t;
+      }catch(e){}
+    }
+    return null;
+  }
+
+  function ghGet(path){
+    return fetch('https://api.github.com/repos/'+REPO+'/contents/'+path+'?ref='+BRANCH+'&t='+Date.now(),
+      {headers:{Authorization:'token '+tok, Accept:'application/vnd.github+json'}})
+      .then(function(r){ if(!r.ok) throw new Error('GET '+path+' → '+r.status); return r.json(); });
+  }
+  function ghPut(path, b64, sha, msg){
+    var body = {message: msg, content: b64, branch: BRANCH};
+    if(sha) body.sha = sha;
+    return fetch('https://api.github.com/repos/'+REPO+'/contents/'+path,
+      {method:'PUT', headers:{Authorization:'token '+tok, Accept:'application/vnd.github+json'},
+       body: JSON.stringify(body)})
+      .then(function(r){ if(!r.ok) throw new Error('PUT '+path+' → '+r.status); return r.json(); });
+  }
+  function b64EncodeUnicode(str){
+    return btoa(unescape(encodeURIComponent(str)));
+  }
+  function b64DecodeUnicode(b64){
+    return decodeURIComponent(escape(atob(b64.replace(/\n/g,''))));
+  }
+
+  var bar, fileInput, pendingSlot = null;
+
+  function toast(msg){
+    var el = document.getElementById('editToast');
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'editToast';
+      el.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#111;color:#fff;border:1px solid #444;padding:10px 18px;font:12px/1.4 "IBM Plex Mono",monospace;letter-spacing:.08em;z-index:99999;max-width:80vw;text-align:center';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = 'block';
+    clearTimeout(el._t);
+    el._t = setTimeout(function(){ el.style.display='none'; }, 4000);
+  }
+
+  function uploadFor(slot){
+    pendingSlot = slot;
+    fileInput.value = '';
+    fileInput.click();
+  }
+
+  function handleFile(file){
+    if(!file || !pendingSlot) return;
+    var slot = pendingSlot; pendingSlot = null;
+    var isVideo = /^video\//.test(file.type) || /\.mp4$/i.test(file.name);
+    var safeName = Date.now() + '-' + file.name.replace(/[^\w.\-]+/g,'_');
+    var path = 'images/uploads/' + safeName;
+    toast('업로드 중… ' + file.name);
+
+    var reader = new FileReader();
+    reader.onload = function(){
+      var b64 = String(reader.result).split(',')[1];
+      ghPut(path, b64, null, 'Upload ' + safeName + ' (inline edit)')
+        .then(function(){ return ghGet('data/works.json'); })
+        .then(function(f){
+          var data = JSON.parse(b64DecodeUnicode(f.content));
+          if(!Array.isArray(data.works)) data.works = [];
+          var idx = slot.workIndex;
+          if(idx >= data.works.length || !data.works[idx]){
+            var title = prompt('이 자리는 아직 비어 있습니다. 새 작품 제목:');
+            if(!title){ toast('취소됨'); return null; }
+            while(data.works.length <= idx) data.works.push(null);
+            data.works[idx] = {code:'NUK—00'+(idx+1), title:title, year:String(new Date().getFullYear()), status:'In production', featured:false, image:'', video:''};
+            data.works = data.works.filter(function(w){ return w; });
+            idx = data.works.length - 1;
+          }
+          var w = data.works[idx];
+          if(isVideo){ w.video = '/' + path; } else { w.image = '/' + path; w.video = w.video || ''; }
+          return ghPut('data/works.json', b64EncodeUnicode(JSON.stringify(data, null, 2)), f.sha,
+                       'Update '+(w.title||'work')+' media (inline edit)');
+        })
+        .then(function(res){
+          if(!res) return;
+          /* optimistic preview in place */
+          var url = URL.createObjectURL(file);
+          if(slot.el){
+            var ph = slot.el.querySelector('.ph') || slot.el;
+            var media = slot.el.classList.contains('media') ? slot.el : slot.el.querySelector('.media');
+            if(media) media.classList.add('natural');
+            ph.innerHTML = isVideo
+              ? '<video src="'+url+'" autoplay muted loop playsinline style="width:100%;display:block"></video>'
+              : '<img src="'+url+'" style="width:100%;height:auto;display:block">';
+          }
+          toast('저장 완료 — 1분 내 사이트에 반영됩니다');
+        })
+        .catch(function(err){
+          if(/401|403/.test(String(err))){
+            toast('로그인이 만료되었습니다 — 관리자 페이지에서 다시 로그인해 주세요');
+            setTimeout(function(){ location.href='/admin/'; }, 1500);
+          } else {
+            toast('오류: ' + err.message);
+          }
+        });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function markSlots(on){
+    /* grid cards: index in DOM order == index in works.json (loader uses the same order) */
+    document.querySelectorAll('#grid .card').forEach(function(card, i){
+      var media = card.querySelector('.media');
+      if(!media) return;
+      media.style.outline = on ? '2px dashed #1a5cff' : '';
+      media.style.cursor = on ? 'copy' : '';
+      if(on){
+        media._editHandler = function(e){
+          e.preventDefault(); e.stopPropagation();
+          uploadFor({el: media, workIndex: i});
+        };
+        media.addEventListener('click', media._editHandler);
+      } else if(media._editHandler){
+        media.removeEventListener('click', media._editHandler);
+      }
+    });
+  }
+
+  window.__kunukEdit = function(){
+    tok = getToken();
+    if(!tok) return false;   /* not logged in → fall through to /admin/ */
+    if(editing) return true;
+    editing = true;
+
+    fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*,video/mp4';
+    fileInput.style.display = 'none';
+    fileInput.addEventListener('change', function(){ handleFile(fileInput.files[0]); });
+    document.body.appendChild(fileInput);
+
+    bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1a5cff;color:#fff;z-index:99998;display:flex;align-items:center;gap:16px;padding:10px 18px;font:12px/1 "IBM Plex Mono",monospace;letter-spacing:.1em';
+    bar.innerHTML = '<span>EDIT MODE — 파란 점선 틀을 클릭해 사진/영상 교체</span>'
+      + '<a href="/admin/" style="margin-left:auto;color:#fff">전체 관리자</a>'
+      + '<button id="editExit" style="background:#fff;color:#1a5cff;border:0;padding:6px 12px;cursor:pointer;font:inherit">종료</button>';
+    document.body.appendChild(bar);
+    document.getElementById('editExit').addEventListener('click', function(){ location.reload(); });
+
+    markSlots(true);
+    toast('편집 모드 시작 — 사진 틀을 클릭하세요');
+    return true;
+  };
 })();
 </script>
 
