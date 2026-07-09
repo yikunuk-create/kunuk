@@ -926,10 +926,16 @@ footer{
             bindEdit(btn, function(){
               var title = prompt('이 자리는 아직 비어 있습니다. 새 작품 제목 (히어로에 노출됩니다):');
               if(!title) return;
+              var year = prompt('연도 표시 (예: 2026 또는 2026.07):', String(new Date().getFullYear()));
+              if(year === null) return;
               updateWorks(function(data){
-                data.works.push({code:'NUK—00'+(data.works.length+1), title:title, year:String(new Date().getFullYear()), status:'In production', featured:true, image:'', video:''});
+                data.works.push({code:'NUK—00'+(data.works.length+1), title:title, year:year, status:'In production', featured:true, image:'', video:''});
                 return 'Add featured work '+title;
-              }, function(){ btn.firstChild.textContent = title; });
+              }, function(){
+                btn.firstChild.textContent = title;
+                if(sup) sup.textContent = year;
+                markSlots(true);   /* rebind so the new work's title/year edit immediately */
+              });
             }, 'pointer');
           }
         });
