@@ -769,16 +769,54 @@ footer{
   /* refresh label once real catalog codes arrive from the CMS */
   document.addEventListener('worksloaded', function(){ render(true); });
 
-  /* touch swipe on the hero */
-  var x0 = null, y0 = null;
+  /* ---------- step scroll ----------
+     While the hero is at the top of the page, scrolling/swiping down steps
+     through the works one by one; only after the last work does the page
+     actually scroll on to the Index. Scrolling up at the top steps back.
+     The ↓ button remains a direct shortcut past the hero. */
+  var lock = 0;
+  function step(dir){
+    var now = Date.now();
+    if(now - lock < 650) return;          /* one step per gesture burst */
+    lock = now;
+    if(window.__setWork) window.__setWork(cur + dir);
+  }
+  function canStep(dir){
+    return dir === 1 ? cur < N-1 : cur > 0;
+  }
+
+  /* desktop: mouse wheel / trackpad */
+  hero.addEventListener('wheel', function(e){
+    if(window.scrollY > 4) return;         /* hero no longer pinned → native scroll */
+    var dir = e.deltaY > 0 ? 1 : -1;
+    if(canStep(dir)){
+      e.preventDefault();
+      step(dir);
+    }
+  }, {passive:false});
+
+  /* mobile: vertical swipe steps, horizontal swipe still switches works */
+  var x0 = null, y0 = null, steppedV = false;
   hero.addEventListener('touchstart', function(e){
-    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; steppedV = false;
   }, {passive:true});
+  hero.addEventListener('touchmove', function(e){
+    if(x0 === null || window.scrollY > 4) return;
+    var dx = e.touches[0].clientX - x0;
+    var dy = e.touches[0].clientY - y0;
+    if(Math.abs(dy) <= Math.abs(dx)) return;   /* horizontal gesture → handled on touchend */
+    var dir = dy < 0 ? 1 : -1;                 /* swipe up = next work */
+    if(canStep(dir)){
+      e.preventDefault();                      /* hold the page while stepping */
+      if(!steppedV && Math.abs(dy) > 30){ steppedV = true; step(dir); }
+    }
+  }, {passive:false});
   hero.addEventListener('touchend', function(e){
     if(x0 === null) return;
     var dx = e.changedTouches[0].clientX - x0;
     var dy = e.changedTouches[0].clientY - y0;
     x0 = null;
+    if(steppedV) return;                       /* vertical step already consumed the gesture */
     if(Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
     var next = (cur + (dx < 0 ? 1 : -1) + N) % N;
     if(window.__setWork) window.__setWork(next);
