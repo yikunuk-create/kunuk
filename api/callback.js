@@ -1,10 +1,12 @@
-exports.handler = async (event) => {
-  const code = event.queryStringParameters && event.queryStringParameters.code;
+module.exports = async (req, res) => {
+  const code = req.query && req.query.code;
   const clientId = process.env.OAUTH_CLIENT_ID;
   const clientSecret = process.env.OAUTH_CLIENT_SECRET;
 
   if (!code) {
-    return { statusCode: 400, body: "Missing code" };
+    res.statusCode = 400;
+    res.end("Missing code");
+    return;
   }
 
   const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
@@ -23,7 +25,9 @@ exports.handler = async (event) => {
   const tokenData = await tokenRes.json();
 
   if (tokenData.error) {
-    return { statusCode: 400, body: `OAuth error: ${tokenData.error_description || tokenData.error}` };
+    res.statusCode = 400;
+    res.end(`OAuth error: ${tokenData.error_description || tokenData.error}`);
+    return;
   }
 
   const token = tokenData.access_token;
@@ -49,9 +53,7 @@ exports.handler = async (event) => {
 </body>
 </html>`;
 
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": "text/html" },
-    body: html,
-  };
+  res.statusCode = 200;
+  res.setHeader("Content-Type", "text/html");
+  res.end(html);
 };
