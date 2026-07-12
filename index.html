@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
+<script>
+/* apply the saved theme before first paint to avoid a flash (FOUC) */
+try{ if(localStorage.getItem('kunuk-theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); }catch(e){}
+</script>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -79,6 +83,39 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--ikb);outline-offset
 
 /* ---- language index: plain horizontal text list, never a box ---- */
 .lang-list{display:flex;align-items:baseline;gap:18px}
+
+/* menu button + fullscreen overlay navigation */
+.menu-btn{
+  background:none;border:none;cursor:pointer;padding:0;margin-right:20px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--grey);transition:color .25s;
+}
+.menu-btn:hover{color:var(--ink)}
+.menu-overlay{
+  position:fixed;inset:0;z-index:9990;
+  background:var(--bg);
+  display:flex;align-items:center;padding:0 8vw;
+  opacity:0;pointer-events:none;
+  transition:opacity .35s ease;
+}
+.menu-overlay.open{opacity:1;pointer-events:auto}
+.menu-overlay nav{display:flex;flex-direction:column;gap:10px}
+.menu-overlay a{
+  font-family:'Archivo',sans-serif;font-weight:500;
+  font-size:clamp(44px,9vw,110px);letter-spacing:-.02em;line-height:1.06;
+  color:var(--grey);text-decoration:none;transition:color .25s;
+}
+.menu-overlay a:hover{color:var(--ink)}
+.menu-overlay .menu-close{
+  position:absolute;top:14px;right:22px;
+  background:none;border:none;cursor:pointer;
+  color:var(--ink);font-size:28px;line-height:1;
+}
+
+/* theme switch: circular reveal driven by the View Transition API */
+::view-transition-old(root),
+::view-transition-new(root){animation:none;mix-blend-mode:normal}
 .lang{
   background:none;border:none;cursor:pointer;padding:0;
   font-family:'IBM Plex Mono',monospace;
@@ -124,10 +161,11 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--ikb);outline-offset
    <video src="your-video.mp4" autoplay muted loop playsinline></video> */
 .layer{
   position:absolute;inset:0;
-  opacity:0;transform:scale(1.03);
-  transition:opacity .8s ease;
+  opacity:0;transform:scale(1.05);
+  filter:blur(18px);
+  transition:opacity .8s ease, filter 1.1s ease, transform 1.5s cubic-bezier(.2,.6,.2,1);
 }
-.layer.show{opacity:1}
+.layer.show{opacity:1;filter:blur(0);transform:scale(1)}
 .layer img,.layer video{width:100%;height:100%;object-fit:cover;display:block}
 
 .l-liminal{
@@ -421,6 +459,7 @@ footer{
 
 <div class="bar">
   <div class="left">
+    <button class="menu-btn" id="menuBtn" aria-label="Menu">Menu</button>
     <nav class="lang-list" id="langBox" aria-label="Language">
       <button class="lang on" data-lang="en">EN</button>
       <button class="lang" data-lang="ko">KO</button>
@@ -443,6 +482,16 @@ footer{
   <div class="right">
     <button class="chip" id="themeBtn">Light</button>
   </div>
+</div>
+
+<!-- ===== fullscreen menu overlay (A24-style navigation) ===== -->
+<div class="menu-overlay" id="menuOverlay" aria-hidden="true">
+  <button class="menu-close" id="menuClose" aria-label="Close menu">&times;</button>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/index/">Index</a>
+    <a href="#contact">Contact</a>
+  </nav>
 </div>
 
 <!-- ===== fullscreen intro hero: A24 pattern, shown once at the top ===== -->
@@ -642,16 +691,51 @@ footer{
     applyLang(this.value);
   });
 
-  /* ---------- theme ---------- */
-  var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-  theme = prefersLight ? 'light' : 'dark';
+  /* ---------- theme ----------
+     Light by default; the visitor's last choice is remembered.
+     Switching plays a circular reveal that expands from the button. */
+  var savedTheme = null;
+  try{ savedTheme = localStorage.getItem('kunuk-theme'); }catch(e){}
+  theme = savedTheme === 'dark' ? 'dark' : 'light';
+
   function applyTheme(t){
     theme = t;
     root.setAttribute('data-theme', t);
     themeBtn.textContent = dict[lang].theme[t];
   }
-  themeBtn.addEventListener('click', function(){
-    applyTheme(theme === 'dark' ? 'light' : 'dark');
+  function toggleTheme(){
+    var next = theme === 'dark' ? 'light' : 'dark';
+    try{ localStorage.setItem('kunuk-theme', next); }catch(e){}
+    applyTheme(next);
+  }
+  themeBtn.addEventListener('click', function(e){
+    if(!document.startViewTransition){ toggleTheme(); return; }
+    var x = e.clientX || window.innerWidth - 30;
+    var y = e.clientY || 24;
+    var vt = document.startViewTransition(toggleTheme);
+    vt.ready.then(function(){
+      var r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+      document.documentElement.animate(
+        {clipPath: ['circle(0px at '+x+'px '+y+'px)', 'circle('+r+'px at '+x+'px '+y+'px)']},
+        {duration: 650, easing: 'cubic-bezier(.2,.6,.2,1)', pseudoElement: '::view-transition-new(root)'}
+      );
+    });
+  });
+
+  /* ---------- menu overlay ---------- */
+  var menuBtn = document.getElementById('menuBtn');
+  var menuOverlay = document.getElementById('menuOverlay');
+  menuBtn.addEventListener('click', function(){
+    menuOverlay.classList.add('open');
+    menuOverlay.setAttribute('aria-hidden','false');
+  });
+  function closeMenu(){
+    menuOverlay.classList.remove('open');
+    menuOverlay.setAttribute('aria-hidden','true');
+  }
+  document.getElementById('menuClose').addEventListener('click', closeMenu);
+  menuOverlay.querySelectorAll('a').forEach(function(a){
+    a.addEventListener('click', closeMenu);
   });
 
   /* ---------- init ---------- */
@@ -831,6 +915,16 @@ footer{
     return dir === 1 ? cur < N-1 : cur > 0;
   }
 
+  /* after the last work, hand off to the Index with a smooth glide
+     instead of an abrupt native jump */
+  function glideToIndex(){
+    var now = Date.now();
+    if(now - lock < 900) return;
+    lock = now;
+    var target = document.getElementById('upcoming');
+    if(target) target.scrollIntoView({behavior:'smooth'});
+  }
+
   /* desktop: mouse wheel / trackpad */
   hero.addEventListener('wheel', function(e){
     if(window.scrollY > 4) return;         /* hero no longer pinned → native scroll */
@@ -838,6 +932,9 @@ footer{
     if(canStep(dir)){
       e.preventDefault();
       step(dir);
+    } else if(dir === 1){
+      e.preventDefault();
+      glideToIndex();
     }
   }, {passive:false});
 
@@ -855,6 +952,9 @@ footer{
     if(canStep(dir)){
       e.preventDefault();                      /* hold the page while stepping */
       if(!steppedV && Math.abs(dy) > 30){ steppedV = true; step(dir); }
+    } else if(dir === 1){
+      e.preventDefault();                      /* last work → glide to Index */
+      if(!steppedV && Math.abs(dy) > 30){ steppedV = true; glideToIndex(); }
     }
   }, {passive:false});
   hero.addEventListener('touchend', function(e){
