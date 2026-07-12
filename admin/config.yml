@@ -2,7 +2,7 @@ backend:
   name: github
   repo: yikunuk-create/kunuk
   branch: main
-  base_url: https://kunuk.vercel.app
+  base_url: https://kunukarchive.vercel.app
   auth_endpoint: /api/auth
 
 media_folder: "images/uploads"
