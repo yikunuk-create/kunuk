@@ -378,16 +378,27 @@ footer{
   .hero-eyebrow .eb1,.hero-eyebrow .eb2{display:block}
   .hero-eyebrow .eb2{margin-top:4px}
 
-  /* pager: catalog code stacks upright letter-by-letter along the
-     right edge, raised clear of the title stack */
-  .hero-pager{bottom:210px;right:16px;gap:10px}
+  /* pager: upright letter stack beside the ruler, split-flap style */
+  .hero-pager{bottom:210px;right:16px;flex-direction:row;align-items:center;gap:12px}
   .hero-pager .code{display:none}
   .hero-pager .code-v{
     display:flex;flex-direction:column;align-items:center;
-    font-size:10px;line-height:1.3;
-    transition:opacity .25s;
+    order:-1;                      /* letters left, ruler right */
+    font-size:10px;line-height:1.5;
+    perspective:300px;             /* depth for the flip */
   }
-  .hero-pager .code-v .frac{margin-top:6px;letter-spacing:.08em}
+  .hero-pager .code-v span{backface-visibility:hidden}
+  .hero-pager .code-v.flip span{animation:flipIn .5s cubic-bezier(.2,.65,.25,1) both}
+  .hero-pager .code-v .frac{margin-top:8px;letter-spacing:.08em}
+
+  /* scroll cue: hidden while walking through works,
+     appears only on the last one */
+  .hero .down{opacity:0;pointer-events:none;transition:opacity .5s;animation:none}
+  .hero.at-end .down{opacity:1;pointer-events:auto;animation:down 2.6s ease-in-out infinite}
+}
+@keyframes flipIn{
+  0%{transform:rotateX(-92deg);opacity:.1}
+  100%{transform:rotateX(0);opacity:1}
 }
 @media (max-width:560px){
   .lang-list{display:none}
@@ -750,23 +761,24 @@ footer{
     var y = Math.round((H * cur / (N-1)) / STEP) * STEP;
     activeTick.style.top = y+'px';
   }
-  function renderV(){
+  function renderV(animate){
     /* mobile: each character of the catalog code stacked upright,
-       with a position fraction (1/4, 2/4 …) underneath */
-    var html = codeFor(cur).split('').map(function(c){
-      return '<span>'+c+'</span>';
-    }).join('');
-    codeV.innerHTML = html + '<span class="frac">'+(cur+1)+'/'+N+'</span>';
+       split-flap style, with a position fraction (1/4, 2/4 …) below */
+    var chars = codeFor(cur).split('');
+    codeV.classList.remove('flip');
+    codeV.innerHTML = chars.map(function(c, i){
+      return '<span style="animation-delay:'+(i*55)+'ms">'+c+'</span>';
+    }).join('') + '<span class="frac" style="animation-delay:'+(chars.length*55)+'ms">'+(cur+1)+'/'+N+'</span>';
+    if(animate){
+      void codeV.offsetHeight;        /* restart the flip keyframes */
+      codeV.classList.add('flip');
+    }
   }
 
   function render(instant){
     snapTick();
-    if(instant){
-      renderV();
-    } else {
-      codeV.style.opacity = 0;
-      setTimeout(function(){ renderV(); codeV.style.opacity = 1; }, 220);
-    }
+    renderV(!instant);
+    hero.classList.toggle('at-end', cur === N-1);
     if(instant || rolling){
       col.style.transition = 'none';
       col.innerHTML = '<span>'+label(cur)+'</span>';
