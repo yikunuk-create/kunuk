@@ -212,6 +212,7 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--ikb);outline-offset
   display:flex;flex-direction:column;align-items:flex-end;gap:12px;
   font-family:'IBM Plex Mono',monospace;color:#F2F2F0;
   pointer-events:none;
+  mix-blend-mode:difference;  /* stays legible over bright hero images */
 }
 .hero-pager .ruler{position:relative;width:16px;height:96px}
 .hero-pager .ruler i{position:absolute;right:0;height:1px;width:6px;background:rgba(242,242,240,.3)}
@@ -370,6 +371,16 @@ footer{
   .grid{grid-template-columns:1fr 1fr;gap:40px 16px}
   .c1,.c2,.c3,.c4,.c5,.c6{grid-column:auto;margin-top:0}
   .c2,.c4{margin-top:48px}
+
+  /* eyebrow: two clean lines, no dash */
+  .hero-eyebrow .eb-sep{display:none}
+  .hero-eyebrow .eb1,.hero-eyebrow .eb2{display:block}
+  .hero-eyebrow .eb2{margin-top:4px}
+
+  /* pager: catalog code turns vertical along the right edge,
+     raised clear of the title stack */
+  .hero-pager{bottom:210px;right:16px;gap:10px}
+  .hero-pager .code{transform:rotate(90deg);transform-origin:top right;margin-top:6px}
 }
 @media (max-width:560px){
   .lang-list{display:none}
@@ -426,7 +437,7 @@ footer{
   </div>
   <div class="hero-scrim"></div>
   <div class="hero-content">
-    <div class="hero-eyebrow">Kunuk Archive — AI Film / Graphic / Visual Direction</div>
+    <div class="hero-eyebrow"><span class="eb1">Kunuk Archive</span><span class="eb-sep"> — </span><span class="eb2">AI Film / Graphic / Visual Direction</span></div>
     <div class="works" id="works">
       <button class="work on" data-work="0">Korean Liminal Space<sup>2026</sup></button>
       <button class="work" data-work="1">Raf Simons Archive Film Study<sup>2026</sup></button>
