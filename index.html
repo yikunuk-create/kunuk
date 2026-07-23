@@ -1256,7 +1256,8 @@ footer{
     bar = document.createElement('div');
     bar.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1a5cff;color:#fff;z-index:99998;display:flex;align-items:center;gap:16px;padding:10px 18px;font:12px/1 "IBM Plex Mono",monospace;letter-spacing:.1em';
     bar.innerHTML = '<span>EDIT MODE — 사진 틀 클릭: 교체 · 제목/상태/연도 클릭: 수정</span>'
-      + '<a href="/admin/" style="margin-left:auto;color:#fff">전체 관리자</a>'
+      + '<a href="/prd/" style="margin-left:auto;color:#fff">PRD</a>'
+      + '<a href="/admin/" style="color:#fff">전체 관리자</a>'
       + '<button id="editExit" style="background:#fff;color:#1a5cff;border:0;padding:6px 12px;cursor:pointer;font:inherit">종료</button>';
     document.body.appendChild(bar);
     document.getElementById('editExit').addEventListener('click', function(){ location.reload(); });
